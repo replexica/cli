@@ -20,7 +20,7 @@ export const defaultConfig: ConfigSchema = {
 export const defaultGithubWorkflow = {
   name: 'Replexica',
   on: {
-    workflow_dispatch: {},
+    workflow_dispatch: null,
     push: { branches: ['main'] },
     pull_request: { branches: ['main'] },
   },
