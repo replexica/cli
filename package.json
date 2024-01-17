@@ -1,5 +1,6 @@
 {
-  "name": "@replexica/cli",
+  "name": "replexica",
+  "private": false,
   "version": "0.0.0",
   "description": "Replexica CLI",
   "main": "dist/index.js",
@@ -9,7 +10,7 @@
   "scripts": {
     "replexica": "npm run build && ./bin/run.js",
     "build": "shx rm -rf dist && tsc -b",
-    "release": "semantic-release"
+    "release": "semantic-release --dry-run"
   },
   "dependencies": {
     "@oclif/core": "^3",
@@ -45,5 +46,8 @@
   "homepage": "https://github.com/replexica/cli",
   "keywords": [
     "replexica"
-  ]
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
 }
