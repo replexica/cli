@@ -22,13 +22,13 @@ jobs:
       - name: Use Node.js 18
         uses: actions/setup-node@v2
         with:
-          node-version: 18.16.0
+          node-version: 20.9.0
 
       - name: Install pnpm
         uses: pnpm/action-setup@v2
         id: pnpm-install
         with:
-          version: 8.6.0
+          version: 8.14.0
           run_install: false
 
       - name: Configure pnpm cache
