@@ -1,0 +1,49 @@
+{
+  "name": "@replexica/cli",
+  "version": "0.0.0",
+  "description": "Replexica CLI",
+  "main": "dist/index.js",
+  "bin": {
+    "replexica": "./bin/run.js"
+  },
+  "scripts": {
+    "replexica": "npm run build && ./bin/run.js",
+    "build": "shx rm -rf dist && tsc -b",
+    "release": "semantic-release"
+  },
+  "dependencies": {
+    "@oclif/core": "^3",
+    "@oclif/plugin-help": "^6",
+    "@oclif/plugin-plugins": "^4",
+    "dotenv": "^16.3.1",
+    "lodash": "^4.17.21",
+    "semantic-release": "^23.0.0",
+    "yaml": "^2.3.4",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@oclif/prettier-config": "^0.2.1",
+    "@semantic-release/git": "^10.0.1",
+    "@types/lodash": "^4.14.202",
+    "@types/node": "^20.11.5",
+    "oclif": "^4.3.4",
+    "shx": "^0.3.3",
+    "ts-node": "^10.9.2",
+    "typescript": "^5"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    "/bin",
+    "/dist",
+    "/oclif.manifest.json"
+  ],
+  "types": "dist/index.d.ts",
+  "license": "MIT",
+  "bugs": "https://github.com/replexica/cli/issues",
+  "homepage": "https://github.com/replexica/cli",
+  "keywords": [
+    "replexica"
+  ]
+}
