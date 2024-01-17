@@ -47,9 +47,11 @@ export type ReplexicaInitParams = {
 };
 
 export type LocalizeParams<T> = {
-  project?: string;
-  source: string;
-  target: string;
+  groupId: string;
+  projectName: string;
+  clientName: string;
+  sourceLocale: string;
+  targetLocale: string;
   data: T;
 };
 

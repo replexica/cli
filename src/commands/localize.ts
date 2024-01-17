@@ -6,6 +6,7 @@ import { ConfigSchema } from '../config/schema';
 import _ from 'lodash';
 import { getReplexicaClient } from '../engine/client';
 import dotenv from 'dotenv';
+import { createId } from '@paralleldrive/cuid2';
 
 dotenv.config();
 
@@ -23,6 +24,11 @@ export default class Localize extends Command {
   static examples = []
 
   static flags = {
+    clientName: Flags.string({
+      description: 'Client name',
+      default: 'cli',
+      helpValue: 'cli',
+    }),
     sourceLang: Flags.string({
       description: 'Language to use as the source language',
       helpValue: 'en',
@@ -45,7 +51,7 @@ export default class Localize extends Command {
   }
 
   async run(): Promise<void> {
-    const { configRoot, projectsMapObj, sourceLang, targetLangs } = await this.extractConfig();
+    const { configRoot, projectsMapObj, sourceLang, targetLangs, clientName } = await this.extractConfig();
 
     for (const [projectName, dictionaryPattern] of Object.entries(projectsMapObj)) {
       for (const targetLang of targetLangs) {
@@ -58,6 +64,7 @@ export default class Localize extends Command {
         ]);
 
         const newTargetLangData = await this.localizeProject(
+          clientName,
           projectName,
           sourceLang,
           sourceLangData,
@@ -108,17 +115,13 @@ export default class Localize extends Command {
     }
     const projectsMapObj = _.zipObject(projects, dictionaries);
 
-    console.log({
-      sourceLang,
-      targetLangs,
-      projects,
-      dictionaries,
-      projectsMapObj,
-    });
-    return { configRoot, projectsMapObj, sourceLang, targetLangs };
+    const clientName = flags.clientName;
+
+    return { configRoot, projectsMapObj, sourceLang, targetLangs, clientName };
   }
 
   private async localizeProject(
+    clientName: string,
     projectName: string,
     sourceLang: string,
     sourceLangData: Record<string, string>,
@@ -127,11 +130,15 @@ export default class Localize extends Command {
   ) {
     const missingKeys = _.difference(Object.keys(sourceLangData), Object.keys(targetLangData));
     const recordToTranslate = _.pick(sourceLangData, missingKeys);
-    const translatedRecord = await this.translateRecord(projectName, {
-      source: sourceLang,
-      target: targetLang,
-      data: recordToTranslate,
-    });
+    const translatedRecord = await this.translateRecord(
+      clientName,
+      projectName,
+      {
+        source: sourceLang,
+        target: targetLang,
+        data: recordToTranslate,
+      },
+    );
 
     const extraneousKeys = _.difference(Object.keys(targetLangData), Object.keys(sourceLangData));
     const extraneousNullifiedRecord = _.zipObject(extraneousKeys, extraneousKeys.map(() => null));
@@ -154,15 +161,20 @@ export default class Localize extends Command {
     await fs.writeFile(langFilePath, langFileContent);
   }
 
-  private async translateRecord(projectName: string, params: TranslateRecordParams): Promise<Record<string, string>> {
+  private async translateRecord(clientName: string, projectName: string, params: TranslateRecordParams): Promise<Record<string, string>> {
     console.log(`[${projectName}] ${Object.keys(params.data).length} keys from ${params.source} to ${params.target}...`);
     if (Object.keys(params.data).length === 0) {
       return {};
     }
     const replexica = getReplexicaClient();
+    const groupId = `leg_${createId()}`;
     const translateRecordResponse = await replexica.localizeJson({
-      project: projectName,
-      ...params,
+      groupId,
+      clientName,
+      projectName,
+      sourceLocale: params.source,
+      targetLocale: params.target,
+      data: params.data,
     });
     return translateRecordResponse.data;
   }
