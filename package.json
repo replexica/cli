@@ -10,7 +10,7 @@
   "scripts": {
     "replexica": "npm run build && ./bin/run.js",
     "build": "shx rm -rf dist && tsc -b",
-    "release": "semantic-release --dry-run"
+    "release": "semantic-release"
   },
   "dependencies": {
     "@oclif/core": "^3",
