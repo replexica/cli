@@ -24,10 +24,15 @@ export default class Localize extends Command {
   static examples = []
 
   static flags = {
-    clientName: Flags.string({
-      description: 'Client name',
+    triggerType: Flags.string({
+      description: 'Environment from which the localization is triggered',
       default: 'cli',
-      helpValue: 'cli',
+      helpValue: 'cli, github-action, bitbucket-pipe, etc.',
+    }),
+    triggerName: Flags.string({
+      description: 'Name of the trigger',
+      default: '',
+      helpValue: 'If its a git repo - then its the repo name.',
     }),
     sourceLang: Flags.string({
       description: 'Language to use as the source language',
@@ -51,7 +56,7 @@ export default class Localize extends Command {
   }
 
   async run(): Promise<void> {
-    const { configRoot, projectsMapObj, sourceLang, targetLangs, clientName } = await this.extractConfig();
+    const { configRoot, projectsMapObj, sourceLang, targetLangs, triggerType, triggerName } = await this.extractConfig();
 
     for (const [projectName, dictionaryPattern] of Object.entries(projectsMapObj)) {
       for (const targetLang of targetLangs) {
@@ -64,7 +69,8 @@ export default class Localize extends Command {
         ]);
 
         const newTargetLangData = await this.localizeProject(
-          clientName,
+          triggerType,
+          triggerName,
           projectName,
           sourceLang,
           sourceLangData,
@@ -115,13 +121,15 @@ export default class Localize extends Command {
     }
     const projectsMapObj = _.zipObject(projects, dictionaries);
 
-    const clientName = flags.clientName;
+    const triggerType = flags.triggerType;
+    const triggerName = flags.triggerName;
 
-    return { configRoot, projectsMapObj, sourceLang, targetLangs, clientName };
+    return { configRoot, projectsMapObj, sourceLang, targetLangs, triggerName, triggerType };
   }
 
   private async localizeProject(
-    clientName: string,
+    triggerType: string,
+    triggerName: string,
     projectName: string,
     sourceLang: string,
     sourceLangData: Record<string, string>,
@@ -131,7 +139,8 @@ export default class Localize extends Command {
     const missingKeys = _.difference(Object.keys(sourceLangData), Object.keys(targetLangData));
     const recordToTranslate = _.pick(sourceLangData, missingKeys);
     const translatedRecord = await this.translateRecord(
-      clientName,
+      triggerType,
+      triggerName,
       projectName,
       {
         source: sourceLang,
@@ -161,7 +170,7 @@ export default class Localize extends Command {
     await fs.writeFile(langFilePath, langFileContent);
   }
 
-  private async translateRecord(clientName: string, projectName: string, params: TranslateRecordParams): Promise<Record<string, string>> {
+  private async translateRecord(triggerType: string, triggerName: string, projectName: string, params: TranslateRecordParams): Promise<Record<string, string>> {
     console.log(`[${projectName}] ${Object.keys(params.data).length} keys from ${params.source} to ${params.target}...`);
     if (Object.keys(params.data).length === 0) {
       return {};
@@ -170,8 +179,9 @@ export default class Localize extends Command {
     const groupId = `leg_${createId()}`;
     const translateRecordResponse = await replexica.localizeJson({
       groupId,
-      clientName,
-      projectName,
+      triggerType,
+      triggerName,
+
       sourceLocale: params.source,
       targetLocale: params.target,
       data: params.data,

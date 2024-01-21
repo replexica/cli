@@ -48,13 +48,17 @@ export type ReplexicaInitParams = {
 
 export type LocalizeParams<T> = {
   groupId: string;
-  projectName: string;
-  clientName: string;
+
+  triggerType: string;
+  triggerName: string;
+
   sourceLocale: string;
   targetLocale: string;
   data: T;
 };
 
 export type LocalizeResult<T> = {
+  sourceLocale: string;
+  targetLocale: string;
   data: T;
 }
