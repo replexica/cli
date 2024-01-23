@@ -3,7 +3,7 @@ import path from 'path';
 import fs from 'fs/promises';
 import { loadConfig } from '../config/load';
 import { ConfigSchema } from '../config/schema';
-import _ from 'lodash';
+import _, { keys } from 'lodash';
 import { getReplexicaClient } from '../engine/client';
 import dotenv from 'dotenv';
 import { createId } from '@paralleldrive/cuid2';
@@ -53,10 +53,14 @@ export default class Localize extends Command {
       helpValue: 'demo/[lang].json',
       multiple: true,
     }),
+    key: Flags.string({
+      description: 'Key(s) to localize',
+      multiple: true,
+    }),
   }
 
   async run(): Promise<void> {
-    const { configRoot, projectsMapObj, sourceLang, targetLangs, triggerType, triggerName } = await this.extractConfig();
+    const { configRoot, projectsMapObj, sourceLang, targetLangs, triggerType, triggerName, keysToLocalize } = await this.extractConfig();
 
     for (const [projectName, dictionaryPattern] of Object.entries(projectsMapObj)) {
       for (const targetLang of targetLangs) {
@@ -76,6 +80,7 @@ export default class Localize extends Command {
           sourceLangData,
           targetLang,
           targetLangData,
+          keysToLocalize,
         );
 
         await this.saveLangData(targetLangFilePath, newTargetLangData);
@@ -123,8 +128,9 @@ export default class Localize extends Command {
 
     const triggerType = flags.triggerType;
     const triggerName = flags.triggerName;
+    const keysToLocalize = flags.key;
 
-    return { configRoot, projectsMapObj, sourceLang, targetLangs, triggerName, triggerType };
+    return { configRoot, projectsMapObj, sourceLang, targetLangs, triggerName, triggerType, keysToLocalize };
   }
 
   private async localizeProject(
@@ -135,9 +141,16 @@ export default class Localize extends Command {
     sourceLangData: Record<string, string>,
     targetLang: string,
     targetLangData: Record<string, string>,
+    keysToLocalize?: string[],
   ) {
-    const missingKeys = _.difference(Object.keys(sourceLangData), Object.keys(targetLangData));
-    const recordToTranslate = _.pick(sourceLangData, missingKeys);
+    let finalKeys: string[];
+    if (keysToLocalize) {
+      finalKeys = keysToLocalize;
+    } else {
+      const missingKeys = _.difference(Object.keys(sourceLangData), Object.keys(targetLangData));
+      finalKeys = missingKeys;
+    }
+    const recordToTranslate = _.pick(sourceLangData, finalKeys);
     const translatedRecord = await this.translateRecord(
       triggerType,
       triggerName,
