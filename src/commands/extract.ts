@@ -36,28 +36,25 @@ export default class Extract extends Command {
     console.log(`Scanning ${dir}`);
     const files = await this.readFileTree(dir);
     console.log(`Found ${files.length} files:`);
-    for (const file of files) {
-      console.log(`- ${file}`);
-    }
     const filesToParse = files.filter((file) => {
       const ext = path.extname(file);
       return ext === '.jsx' || ext === '.tsx';
     });
     console.log(`Found ${filesToParse.length} files to parse:`);
     for (const file of filesToParse) {
-      console.log(`- ${file}`);
+      const relativePath = path.relative(dir, file);
+      console.log(`- ${relativePath}`);
     }
+
+    console.log(''); // empty line
 
     // for each file, read the content
     for (const file of filesToParse) {
       const relativePath = path.relative(dir, file);
-      const fileContent = await fs.readFile(file, 'utf-8');
-
       console.log(`Processing ${relativePath}`);
-      await ux.prompt('--- Press any key to continue ---');
+
+      const fileContent = await fs.readFile(file, 'utf-8');
       const result = await this.processFile(relativePath, fileContent);
-      console.log(result);
-      // write the result to the file
       await fs.writeFile(file, result.content);
     }
   }
