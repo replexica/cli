@@ -15,6 +15,15 @@ export class Replexica {
     private params: ReplexicaInitParams,
   ) {}
 
+  async extractLocalizableText(fileContent: string, relativePath: string): Promise<ExtractResult> {
+    const response = await this.exec('/extract', {
+      relativePath,
+      content: fileContent,
+    });
+    const data = response;
+    return data;
+  }
+
   async localizeJson(params: LocalizeParams<Record<string, string>>): Promise<LocalizeResult<Record<string, string>>> {
     const response = await this.exec('/localize/json', params);
     const data = response;
@@ -62,3 +71,8 @@ export type LocalizeResult<T> = {
   targetLocale: string;
   data: T;
 }
+
+export type ExtractResult = {
+  localization: { key: string; value: string; };
+  content: string;
+};
