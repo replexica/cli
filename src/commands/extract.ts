@@ -27,48 +27,56 @@ export default class Extract extends Command {
   async run() {
     const { args } = await this.parse(Extract);
     const dir = path.resolve(process.cwd(), args.root);
-    // using fs, read the directory tree
-    // and save the relative paths into an array
-    // look only for jsx and tsx fles
-    console.log(`Scanning ${dir}`);
+    // Read entire file tree
+    ux.action.start(`Reading file tree from ${dir}`);
     const files = await this.readFileTree(dir);
-    console.log(`Found ${files.length} files:`);
-    const filesToParse = files.filter((file) => {
-      const ext = path.extname(file);
-      return ext === '.jsx' || ext === '.tsx';
-    });
-    console.log(`Found ${filesToParse.length} files to parse:`);
-    for (const file of filesToParse) {
-      const relativePath = path.relative(dir, file);
-      console.log(`- ${relativePath}`);
-    }
-
-    console.log(''); // empty line
-
-    // for each file, read the content
-    for (const file of filesToParse) {
-      const relativePath = path.relative(dir, file);
-      console.log(`Processing ${relativePath}`);
-
-      const fileContent = await fs.readFile(file, 'utf-8');
-      const result = await this.processFile(relativePath, fileContent);
-      await fs.writeFile(file, result.content);
-
-      const dictionaryPath = path.join(dir, 'dictionaries', 'en.json');
-      const dictionaryExists = await fs.stat(dictionaryPath).catch(() => false);
-      let dictionaryContent: string;
+    // Leave only jsx / tsx files
+    const eligibleFiles = files.filter((filePath) => ['.tsx', '.jsx'].includes(path.extname(filePath)));
+    ux.action.stop(`${eligibleFiles.length} eligible files found`);
+    // For each file:
+    // - read content
+    // - extract localizable text + related dictionary pairs
+    // - write modified content back to the file
+    // - merge new dictionary keys back into the dictionary file
+    for (const filepath of eligibleFiles) {
+      // Calc relative file path
+      const relativeFilepath = path.relative(dir, filepath);
+      // Read file content
+      ux.action.start(`Reading ${relativeFilepath}`);
+      const fileContent = await fs.readFile(filepath, 'utf-8');
+      ux.action.stop();
+      // Extract localizable text
+      ux.action.start(`Extracting localizable text from ${relativeFilepath}`);
+      const result = await this.processFile(relativeFilepath, fileContent);
+      ux.action.stop();
+      // Write modified content back to the file
+      ux.action.start(`Writing modified content to ${relativeFilepath}`);
+      await fs.writeFile(filepath, result.content);
+      ux.action.stop();
+      // Merge new dictionary keys back into the dictionary file
+      ux.action.start(`Merging new dictionary keys into the dictionary file`);
+      const dictionaryPath = path.resolve(dir, 'dictionaries/en.json');
+      // Check if dictionary file exists
+      const dictionaryExists = await fs.stat(dictionaryPath).then(() => true).catch(() => false);
+      // Create folders for the dictionary file path
+      await fs.mkdir(path.dirname(dictionaryPath), { recursive: true });
+      // Read existing dictionary file
+      let dictionaryContent;
       if (dictionaryExists) {
         dictionaryContent = await fs.readFile(dictionaryPath, 'utf-8');
       } else {
         dictionaryContent = '{}';
       }
+      // Parse dictionary file
       const dictionary = JSON.parse(dictionaryContent);
+      // Merge new dictionary keys
       const newDictionary = _.merge(dictionary, result.dictionary);
-      const newDictionaryContent = JSON.stringify(newDictionary, null, 2);
-
-      await fs.mkdir(path.join(dir, 'dictionaries'), { recursive: true });
-      await fs.writeFile(dictionaryPath, newDictionaryContent);
+      // Write dictionary file
+      await fs.writeFile(dictionaryPath, JSON.stringify(newDictionary, null, 2));
+      ux.action.stop();
     }
+
+    ux.log('Done!');
   }
 
   private async processFile(relativePath: string, fileContent: string) {
@@ -77,16 +85,17 @@ export default class Extract extends Command {
     return result;
   }
 
-  private async readFileTree(dir: string, filePaths: string[] = []): Promise<string[]> {
-    const result: string[] = [...filePaths];
-    const entities = await fs.readdir(dir, { withFileTypes: true, recursive: true });
+  private async readFileTree(dir: string): Promise<string[]> {
+    const result: string[] = [];
+    const entities = await fs.readdir(dir, { withFileTypes: true });
     for (const entity of entities) {
-      if (entity.isDirectory()) {
-        const partialResult = await this.readFileTree(path.join(dir, entity.name), filePaths);
-        result.push(...partialResult);
+      if (entity.isFile()) {
+        const absolutePath = path.resolve(dir, entity.name);
+        result.push(absolutePath);
       } else {
-        const partialResult = path.join(dir, entity.name);
-        result.push(partialResult);
+        const subDir = path.resolve(dir, entity.name);
+        const subFiles = await this.readFileTree(subDir);
+        result.push(...subFiles);
       }
     }
     return result;
