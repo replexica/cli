@@ -73,6 +73,6 @@ export type LocalizeResult<T> = {
 }
 
 export type ExtractResult = {
-  localization: { key: string; value: string; };
+  dictionary: Record<string, string>;
   content: string;
 };

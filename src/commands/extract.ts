@@ -1,12 +1,9 @@
 import { Args, Command, ux } from '@oclif/core';
 import path from 'path';
 import fs from 'fs/promises';
-import { loadConfig } from '../config/load';
-import { ConfigSchema } from '../config/schema';
-import _, { keys } from 'lodash';
+import _ from 'lodash';
 import { getReplexicaClient } from '../engine/client';
 import dotenv from 'dotenv';
-import { createId } from '@paralleldrive/cuid2';
 
 dotenv.config();
 
@@ -28,7 +25,7 @@ export default class Extract extends Command {
   static flags = {};
 
   async run() {
-    const { args, flags } = await this.parse(Extract);
+    const { args } = await this.parse(Extract);
     const dir = path.resolve(process.cwd(), args.root);
     // using fs, read the directory tree
     // and save the relative paths into an array
@@ -56,6 +53,21 @@ export default class Extract extends Command {
       const fileContent = await fs.readFile(file, 'utf-8');
       const result = await this.processFile(relativePath, fileContent);
       await fs.writeFile(file, result.content);
+
+      const dictionaryPath = path.join(dir, 'dictionaries', 'en.json');
+      const dictionaryExists = await fs.stat(dictionaryPath).catch(() => false);
+      let dictionaryContent: string;
+      if (dictionaryExists) {
+        dictionaryContent = await fs.readFile(dictionaryPath, 'utf-8');
+      } else {
+        dictionaryContent = '{}';
+      }
+      const dictionary = JSON.parse(dictionaryContent);
+      const newDictionary = _.merge(dictionary, result.dictionary);
+      const newDictionaryContent = JSON.stringify(newDictionary, null, 2);
+
+      await fs.mkdir(path.join(dir, 'dictionaries'), { recursive: true });
+      await fs.writeFile(dictionaryPath, newDictionaryContent);
     }
   }
 
