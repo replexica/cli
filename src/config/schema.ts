@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-const supportedLanguages = z.enum(['en', 'es', 'ca', 'fr', 'de', 'ja', 'ko', 'zh-CN']);
+const supportedLanguages = z.enum(['en', 'es', 'ca', 'fr', 'it', 'de', 'ja', 'ko', 'zh-CN']);
 
 const languageSchema = z.object({
   source: supportedLanguages,
