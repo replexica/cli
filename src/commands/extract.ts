@@ -1,4 +1,4 @@
-import { Args, Command, ux } from '@oclif/core';
+import { Args, Command, Flags, ux } from '@oclif/core';
 import path from 'path';
 import fs from 'fs/promises';
 import _ from 'lodash';
@@ -22,16 +22,25 @@ export default class Extract extends Command {
 
   static examples = [];
 
-  static flags = {};
+  static flags = {
+    interactive: Flags.boolean({
+      description: 'Run in interactive mode, prompting for user input between prcessing the files',
+      default: false,
+    }),
+  };
 
   async run() {
-    const { args } = await this.parse(Extract);
+    const { args, flags } = await this.parse(Extract);
     const dir = path.resolve(process.cwd(), args.root);
     // Read entire file tree
     ux.action.start(`Reading file tree from ${dir}`);
     const files = await this.readFileTree(dir);
     // Leave only jsx / tsx files
-    const eligibleFiles = files.filter((filePath) => ['.tsx', '.jsx'].includes(path.extname(filePath)));
+    const eligibleFiles = files
+      // Include only files with .tsx or .jsx extension
+      .filter((filePath) => ['.tsx', '.jsx'].includes(path.extname(filePath)))
+      // Revers to process root files first
+      .reverse();
     ux.action.stop(`${eligibleFiles.length} eligible files found`);
     // For each file:
     // - read content
@@ -74,6 +83,17 @@ export default class Extract extends Command {
       // Write dictionary file
       await fs.writeFile(dictionaryPath, JSON.stringify(newDictionary, null, 2));
       ux.action.stop();
+
+      // If interactive mode is enabled, prompt user to continue
+      // Any key - continue
+      // Esc - stop
+      if (flags.interactive) {
+        const key = await ux.prompt('Press Enter to continue, or Esc to stop');
+        if (key === '\u001B') {
+          ux.log('Extraction stopped by user.');
+          return;
+        }
+      }
     }
 
     ux.log('Done!');
