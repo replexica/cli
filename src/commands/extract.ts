@@ -64,6 +64,7 @@ export default class Extract extends Command {
       ux.action.stop();
       // Merge new dictionary keys back into the dictionary file
       ux.action.start(`Merging new dictionary keys into the dictionary file`);
+      // TODO: paths should be configurable, taken from the config file
       const dictionaryPath = path.resolve(dir, 'dictionaries/en.json');
       // Check if dictionary file exists
       const dictionaryExists = await fs.stat(dictionaryPath).then(() => true).catch(() => false);
