@@ -48,26 +48,22 @@ export default class Extract extends Command {
     // - write modified content back to the file
     // - merge new dictionary keys back into the dictionary file
     for (const filepath of eligibleFiles) {
-      // If interactive mode is enabled, wait for user keypress to continue
-      // Enter - continue
-      // Esc - stop
-      // Space - skip current file
-      if (flags.interactive) {
-        const keypress = await ux.prompt('Press Enter to continue, Space to skip, or Esc to stop', { type: 'hide' });
-        if (keypress === ' ') {
-          continue;
-        }
-        if (keypress === 'Escape') {
-          break;
-        }
-      }
-
       // Calc relative file path
       const relativeFilepath = path.relative(dir, filepath);
       // Read file content
       ux.action.start(`Reading ${relativeFilepath}`);
       const fileContent = await fs.readFile(filepath, 'utf-8');
       ux.action.stop();
+
+      // If interactive mode is enabled, wait for user input
+      // c - continue (default)
+      // s - skip current file
+      if (flags.interactive) {
+        const keypress = await ux.prompt('Press c to continue, s to skip', { type: 'single', default: 'c' });
+        if (keypress === 's') {
+          continue;
+        }
+      }
       // Extract localizable text
       ux.action.start(`Extracting localizable text from ${relativeFilepath}`);
       const result = await this.processFile(relativeFilepath, fileContent);
