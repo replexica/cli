@@ -51,17 +51,29 @@ export default class Extract extends Command {
       // Calc relative file path
       const relativeFilepath = path.relative(dir, filepath);
       // Read file content
-      ux.action.start(`Reading ${relativeFilepath}`);
+      ux.action.start(`Reading ${relativeFilepath} `);
       const fileContent = await fs.readFile(filepath, 'utf-8');
       ux.action.stop();
 
+      if (fileContent.split('\n').map((l) => l.trim()).join('').length === 0) {
+        ux.log(`Skipping empty file: ${relativeFilepath}`);
+        continue;
+      }
+
       // If interactive mode is enabled, wait for user input
       // c - continue (default)
+      // e - exit
       // s - skip current file
       if (flags.interactive) {
-        const keypress = await ux.prompt('Press c to continue, s to skip', { type: 'single', default: 'c' });
+        const keypress = await ux.prompt('Press c to continue, s to skip', { type: 'single' });
         if (keypress === 's') {
           continue;
+        } else if (keypress === 'e') {
+          break;
+        } else if (keypress === 'c') {
+          // Continue
+        } else {
+          throw new Error('Invalid input');
         }
       }
       // Extract localizable text
