@@ -48,6 +48,20 @@ export default class Extract extends Command {
     // - write modified content back to the file
     // - merge new dictionary keys back into the dictionary file
     for (const filepath of eligibleFiles) {
+      // If interactive mode is enabled, wait for user keypress to continue
+      // Enter - continue
+      // Esc - stop
+      // Space - skip current file
+      if (flags.interactive) {
+        const keypress = await ux.prompt('Press Enter to continue, Space to skip, or Esc to stop', { type: 'hide' });
+        if (keypress === ' ') {
+          continue;
+        }
+        if (keypress === 'Escape') {
+          break;
+        }
+      }
+
       // Calc relative file path
       const relativeFilepath = path.relative(dir, filepath);
       // Read file content
@@ -84,17 +98,6 @@ export default class Extract extends Command {
       // Write dictionary file
       await fs.writeFile(dictionaryPath, JSON.stringify(newDictionary, null, 2));
       ux.action.stop();
-
-      // If interactive mode is enabled, prompt user to continue
-      // Any key - continue
-      // Esc - stop
-      if (flags.interactive) {
-        const key = await ux.prompt('Press Enter to continue, or Esc to stop');
-        if (key === '\u001B') {
-          ux.log('Extraction stopped by user.');
-          return;
-        }
-      }
     }
 
     ux.log('Done!');
