@@ -12,7 +12,7 @@ export const defaultConfig: ConfigSchema = {
   version: 1,
   languages: { source: 'en', target: ['es', 'fr'] },
   projects: [
-    { name: 'demo', dictionary: defaultPaths.dictionaryPattern },
+    { name: 'demo', type: 'json', dictionary: defaultPaths.dictionaryPattern },
   ],
 };
 
