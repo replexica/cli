@@ -126,7 +126,6 @@ export default class Localize extends Command {
         }
       }
 
-      console.log(`result`, result);
       return result;
     }
   }
