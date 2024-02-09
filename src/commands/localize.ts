@@ -1,9 +1,11 @@
+
+
 import { Args, Command, Flags } from '@oclif/core';
 import path from 'path';
 import fs from 'fs/promises';
 import { loadConfig } from '../config/load';
 import { ConfigSchema } from '../config/schema';
-import _, { keys } from 'lodash';
+import _ from 'lodash';
 import { getReplexicaClient } from '../engine/client';
 import dotenv from 'dotenv';
 import { createId } from '@paralleldrive/cuid2';
@@ -34,25 +36,6 @@ export default class Localize extends Command {
       default: '',
       helpValue: 'If its a git repo - then its the repo name.',
     }),
-    sourceLang: Flags.string({
-      description: 'Language to use as the source language',
-      helpValue: 'en',
-    }),
-    targetLang: Flags.string({
-      description: 'Language(s) to use as the target language',
-      helpValue: 'es',
-      multiple: true,
-    }),
-    project: Flags.string({
-      description: 'Project name(s)',
-      helpValue: 'demo',
-      multiple: true,
-    }),
-    dictionary: Flags.string({
-      description: 'Dictionary(s) file path pattern',
-      helpValue: 'demo/[lang].json',
-      multiple: true,
-    }),
     key: Flags.string({
       description: 'Key(s) to localize',
       multiple: true,
@@ -60,35 +43,180 @@ export default class Localize extends Command {
   }
 
   async run(): Promise<void> {
-    const { configRoot, projectsMapObj, sourceLang, targetLangs, triggerType, triggerName, keysToLocalize } = await this.extractConfig();
-
-    for (const [projectName, dictionaryPattern] of Object.entries(projectsMapObj)) {
-      for (const targetLang of targetLangs) {
-        const sourceLangFilePath = path.resolve(configRoot, dictionaryPattern.replace('[lang]', sourceLang));
-        const targetLangFilePath = path.resolve(configRoot, dictionaryPattern.replace('[lang]', targetLang));
-
-        const [sourceLangData, targetLangData] = await Promise.all([
-          this.loadLangData(sourceLangFilePath),
-          this.loadLangData(targetLangFilePath),
-        ]);
+    const config = await this.extractConfig2();
+    for (const project of config.projects) {
+      const sourceLangData = await this.loadProjectLangData(project, config.sourceLang);
+      for (const targetLang of config.targetLangs) {
+        const targetLangData = await this.loadProjectLangData(project, targetLang);
 
         const newTargetLangData = await this.localizeProject(
-          triggerType,
-          triggerName,
-          projectName,
-          sourceLang,
+          config.triggerType,
+          config.triggerName,
+          project.name,
+          config.sourceLang,
           sourceLangData,
           targetLang,
           targetLangData,
-          keysToLocalize,
+          config.keyOverrides,
         );
 
-        await this.saveLangData(targetLangFilePath, newTargetLangData);
+        await this.saveProjectLangData(project, targetLang, newTargetLangData);
       }
     }
   }
 
-  private async extractConfig() {
+  private async loadProjectLangData(project: ConfigSchema['projects'][0], lang: string): Promise<Record<string, any>> {
+    switch (project.type) {
+      case 'json': {
+        const rootPath = path.resolve(process.cwd());
+        const actualPath = project.dictionary.replace('[lang]', lang);
+        const filePath = path.join(rootPath, actualPath);
+        return this.loadPureJsonLangData(filePath);
+      }
+      case 'xcode': {
+        const rootPath = path.resolve(process.cwd());
+        const filePath = path.join(rootPath, project.dictionary);
+        return this.loadXcodeLangData(filePath, lang);
+      }
+      default:
+        throw new Error('Unsupported project type');
+    }
+  }
+
+  private async saveProjectLangData(project: ConfigSchema['projects'][0], lang: string, data: Record<string, any>) {
+    switch (project.type) {
+      case 'json': {
+        const rootPath = path.resolve(process.cwd());
+        const actualPath = project.dictionary.replace('[lang]', lang);
+        const filePath = path.join(rootPath, actualPath);
+        return this.savePureJsonLangData(filePath, data);
+      }
+      case 'xcode': {
+        const rootPath = path.resolve(process.cwd());
+        const filePath = path.join(rootPath, project.dictionary);
+        return this.saveXcodeLangData(filePath, data, lang);
+      }
+      default:
+        throw new Error('Unsupported project type');
+    }
+  }
+
+  private async loadXcodeLangData(filePath: string, lang: string) {
+    const fileExists = fs.stat(filePath).then(() => true).catch(() => false);
+    if (!fileExists) {
+      return {};
+    } else {
+      const fileContent = await fs.readFile(filePath, 'utf8');
+      const parsed = JSON.parse(fileContent);
+
+      const result: Record<string, string | Record<string, string>> = {};
+      for (const [translationKey, _translationEntity] of Object.entries(parsed.strings)) {
+        const rootTranslationEntity = _translationEntity as any;
+        const langTranslationEntity = rootTranslationEntity?.localizations?.[lang];
+        if ('stringUnit' in langTranslationEntity) {
+          result[translationKey] = langTranslationEntity.stringUnit.value;
+        } else if ('variations' in langTranslationEntity) {
+          if ('plural' in langTranslationEntity.variations) {
+            result[translationKey] = {
+              one: langTranslationEntity.variations.plural.one?.stringUnit?.value || '',
+              other: langTranslationEntity.variations.plural.other?.stringUnit?.value || '',
+              zero: langTranslationEntity.variations.plural.zero?.stringUnit?.value || '',
+            };
+          }
+        }
+      }
+
+      return result;
+    }
+  }
+
+  private async loadPureJsonLangData(filePath: string) {
+    const fileExists = await fs.stat(filePath).then(() => true).catch(() => false);
+    if (!fileExists) {
+      return {};
+    } else {
+      const fileContent = await fs.readFile(filePath, 'utf8');
+      return JSON.parse(fileContent);
+    }
+  }
+
+  private async savePureJsonLangData(filePath: string, data: Record<string, string>) {
+    const fileContent = JSON.stringify(data, null, 2);
+    // Create all directories in the path if they don't exist
+    const dirPath = path.dirname(filePath);
+    await fs.mkdir(dirPath, { recursive: true });
+    // Write the file
+    await fs.writeFile(filePath, fileContent);
+  }
+
+  private async saveXcodeLangData(filePath: string, data: Record<string, string | Record<string, string>>, targetLang: string) {
+    const fileExists = await fs.stat(filePath).then(() => true).catch(() => false);
+    if (!fileExists) { throw new Error('Xcoxe translation was not found.'); }
+
+    const fileContent = await fs.readFile(filePath, 'utf8');
+    const parsed = JSON.parse(fileContent);
+
+    const langDataToMerge: any = {};
+    langDataToMerge.strings = {};
+
+    for (const [key, value] of Object.entries(data)) {
+      if (typeof value === 'string') {
+        langDataToMerge.strings[key] = {
+          extractionState: 'manual',
+          localizations: {
+            [targetLang]: {
+              stringUnit: {
+                state: 'translated',
+                value,
+              },
+            },
+          },
+        };
+      } else {
+        langDataToMerge.strings[key] = {
+          extractionState: 'manual',
+          localizations: {
+            [targetLang]: {
+              variations: {
+                plural: {
+                  one: {
+                    stringUnit: {
+                      state: 'translated',
+                      value: value.one,
+                    },
+                  },
+                  other: {
+                    stringUnit: {
+                      state: 'translated',
+                      value: value.other,
+                    },
+                  },
+                  zero: {
+                    stringUnit: {
+                      state: 'translated',
+                      value: value.zero,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        };
+      }
+    }
+
+    const result = _.mergeWith(parsed, langDataToMerge, (objValue, srcValue) => {
+      if (_.isObject(objValue)) {
+        // If the value is an object, merge it deeply
+        return _.merge(objValue, srcValue);
+      }
+    });
+
+    // Write the file
+    await fs.writeFile(filePath, JSON.stringify(result, null, 2));
+  }
+
+  private async extractConfig2() {
     const { flags, args } = await this.parse(Localize);
 
     const configRoot = path.resolve(process.cwd(), args.root);
@@ -111,26 +239,19 @@ export default class Localize extends Command {
       throw this.error('At least one target language must be specified.');
     }
 
-    const projects = (flags.project || config?.projects?.map((v) => v.name) || []).filter(Boolean);
+    const projects = config?.projects || [];
     if (projects.length === 0) {
       throw this.error('At least one project must be specified.');
     }
 
-    const dictionaries = (flags.dictionary || config?.projects?.map((v) => v.dictionary) || []).filter(Boolean);
-    if (dictionaries.length === 0) {
-      throw this.error('At least one dictionary must be specified.');
-    }
-
-    if (dictionaries.length !== projects.length) {
-      throw this.error('The number of dictionaries must match the number of projects.');
-    }
-    const projectsMapObj = _.zipObject(projects, dictionaries);
-
-    const triggerType = flags.triggerType;
-    const triggerName = flags.triggerName;
-    const keysToLocalize = flags.key;
-
-    return { configRoot, projectsMapObj, sourceLang, targetLangs, triggerName, triggerType, keysToLocalize };
+    return {
+      sourceLang,
+      targetLangs,
+      projects,
+      keyOverrides: flags.key,
+      triggerType: flags.triggerType,
+      triggerName: flags.triggerName,
+    };
   }
 
   private async localizeProject(

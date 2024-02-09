@@ -18,15 +18,8 @@ const languageSchema = z.object({
 
 const projectSchema = z.object({
   name: z.string(),
-  dictionary: z.string().transform((val) => {
-    if (!val.includes('[lang]')) {
-      throw new Error('dictionary pattern must contain "[lang]"');
-    }
-    if (!val.endsWith('.json')) {
-      throw new Error('dictionary pattern must end with ".json"');
-    }
-    return val;
-  }),
+  type: z.enum(['json', 'xcode']).optional().default('json'),
+  dictionary: z.string(),
 });
 
 export const configSchema = z.object({

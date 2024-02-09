@@ -1,0 +1,8 @@
+version: 1
+languages:
+  source: en
+  target:
+    - es
+projects:
+  - name: xcode demo
+    dictionary: Localizable.strings
