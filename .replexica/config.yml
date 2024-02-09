@@ -6,4 +6,4 @@ languages:
 projects:
   - name: xcode demo
     type: xcode
-    dictionary: Localizable.strings
+    dictionary: Localizable.xcstrings
