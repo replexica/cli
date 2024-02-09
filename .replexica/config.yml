@@ -5,4 +5,5 @@ languages:
     - es
 projects:
   - name: xcode demo
+    type: xcode
     dictionary: Localizable.strings

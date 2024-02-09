@@ -113,19 +113,22 @@ export default class Localize extends Command {
       for (const [translationKey, _translationEntity] of Object.entries(parsed.strings)) {
         const rootTranslationEntity = _translationEntity as any;
         const langTranslationEntity = rootTranslationEntity?.localizations?.[lang];
-        if ('stringUnit' in langTranslationEntity) {
-          result[translationKey] = langTranslationEntity.stringUnit.value;
-        } else if ('variations' in langTranslationEntity) {
-          if ('plural' in langTranslationEntity.variations) {
-            result[translationKey] = {
-              one: langTranslationEntity.variations.plural.one?.stringUnit?.value || '',
-              other: langTranslationEntity.variations.plural.other?.stringUnit?.value || '',
-              zero: langTranslationEntity.variations.plural.zero?.stringUnit?.value || '',
-            };
+        if (langTranslationEntity) {
+          if ('stringUnit' in langTranslationEntity) {
+            result[translationKey] = langTranslationEntity.stringUnit.value;
+          } else if ('variations' in langTranslationEntity) {
+            if ('plural' in langTranslationEntity.variations) {
+              result[translationKey] = {
+                one: langTranslationEntity.variations.plural.one?.stringUnit?.value || '',
+                other: langTranslationEntity.variations.plural.other?.stringUnit?.value || '',
+                zero: langTranslationEntity.variations.plural.zero?.stringUnit?.value || '',
+              };
+            }
           }
         }
       }
 
+      console.log(`result`, result);
       return result;
     }
   }
