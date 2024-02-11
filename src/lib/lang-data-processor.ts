@@ -1,7 +1,6 @@
 import fs from 'fs/promises';
 import path from 'path';
 import _ from 'lodash';
-import SimpleGit from 'simple-git';
 
 export type LangDataType = 'json' | 'xcode';
 
@@ -10,33 +9,18 @@ export type LangDataNode = {
 };
 
 export interface ILangDataProcessor {
-  loadPrevLangJson(path: string, lang: string): Promise<Record<string, string>>;
   loadLangJson(path: string, lang: string): Promise<Record<string, string>>;
   saveLangJson(path: string, lang: string, langData: Record<string, string>): Promise<void>;
 }
 
 export interface ILangDataProcessorImpl {
-  loadPrevLangData(path: string, lang: string): Promise<LangDataNode>;
   loadLangData(path: string, lang: string): Promise<LangDataNode>;
   saveLangData(path: string, lang: string, langData: LangDataNode): Promise<void>;
 }
 
 export abstract class BaseLangDataProcessor implements ILangDataProcessor, ILangDataProcessorImpl {
   abstract loadLangData(filePath: string, lang: string): Promise<LangDataNode>;
-  abstract loadPrevLangData(path: string, lang: string): Promise<LangDataNode>;
   abstract saveLangData(filePath: string, lang: string, langData: LangDataNode): Promise<void>;
-
-  async loadPrevLangJson(path: string, lang: string): Promise<Record<string, string>> {
-    const langData = await this.loadPrevLangData(path, lang);
-
-    const flat = await import('flat');
-    const result = flat.flatten<LangDataNode, Record<string, string>>(langData, {
-      delimiter: '/',
-      transformKey: (key) => encodeURIComponent(key),
-    });
-
-    return result;
-  }
 
   async loadLangJson(path: string, lang: string): Promise<Record<string, string>> {
     const langData = await this.loadLangData(path, lang);
@@ -66,27 +50,6 @@ export class JsonLangDataProcessor extends BaseLangDataProcessor {
     return JSON.parse(fileContent);
   }
 
-  async loadPrevLangData(filePathPattern: string, lang: string): Promise<LangDataNode> {
-    if (!filePathPattern.includes('[lang]')) { throw new Error('The file path must include the [lang] placeholder'); }
-
-    const filePath = filePathPattern.replace('[lang]', lang);
-    const relativePath = path.relative(process.cwd(), filePath);
-
-    const git = SimpleGit();
-    // git log -n 1 --pretty=format:%h -- <file>
-    const res = await git.log({ n: 1, pretty: '%h', file: relativePath });
-    if (res.all.length === 0) { return {}; }
-
-    const commitHash = res.all[0].hash;
-    // get the prev content of the file
-    const fileContent = await git.show(`${commitHash}~1:${relativePath}`);
-    if (!fileContent) { return {}; }
-
-    const result = await this.parseFileContent(fileContent);
-
-    return result;
-  }
-
   async loadLangData(filePathPattern: string, lang: string): Promise<LangDataNode> {
     if (!filePathPattern.includes('[lang]')) { throw new Error('The file path must include the [lang] placeholder'); }
 
@@ -96,7 +59,8 @@ export class JsonLangDataProcessor extends BaseLangDataProcessor {
       return {};
     } else {
       const fileContent = await fs.readFile(filePath, 'utf8');
-      return JSON.parse(fileContent);
+      const result = await this.parseFileContent(fileContent);
+      return result;
     }
   }
 
@@ -136,23 +100,6 @@ export class XcodeLangDataProcessor extends BaseLangDataProcessor {
       }
     }
 
-    return result;
-  }
-
-  async loadPrevLangData(filePath: string, lang: string): Promise<LangDataNode> {
-    const relativePath = path.relative(process.cwd(), filePath);
-
-    const git = SimpleGit();
-    // git log -n 1 --pretty=format:%h -- <file>
-    const res = await git.log({ n: 1, pretty: '%h', file: relativePath });
-    if (res.all.length === 0) { return {}; }
-
-    const commitHash = res.all[0].hash;
-    // get the prev content of the file
-    const fileContent = await git.show(`${commitHash}~1:${relativePath}`);
-    if (!fileContent) { return {}; }
-
-    const result = await this.parseFileContent(fileContent, lang);
     return result;
   }
 

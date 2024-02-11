@@ -7,7 +7,9 @@ import _ from 'lodash';
 import { getReplexicaClient } from '../../engine/client';
 import dotenv from 'dotenv';
 import { createId } from '@paralleldrive/cuid2';
-import { ILangDataProcessor, JsonLangDataProcessor, LangDataType, XcodeLangDataProcessor } from './lang-data-processor';
+import { ILangDataProcessor, JsonLangDataProcessor, LangDataType, XcodeLangDataProcessor } from '../../lib/lang-data-processor';
+import YAML from 'yaml';
+import Crypto from 'crypto';
 
 dotenv.config();
 
@@ -45,18 +47,16 @@ export default class Localize extends Command {
     const config = await this.extractConfig();
     for (const project of config.projects) {
       const sourceLangData = await this.loadProjectLangData(project, config.sourceLang);
-      const sourceLangDataPrev = await this.loadPrevProjectLangData(project, config.sourceLang);
 
-      const changedKeys = _.difference(
-        _.intersection(Object.keys(sourceLangData), Object.keys(sourceLangDataPrev)),
-        Object.keys(_.pickBy(sourceLangData, (value, key) => sourceLangDataPrev[key] === value)),
-      );
+      const changedKeys = await this.calculateChangedKeys(project.name, sourceLangData);
 
       for (const targetLang of config.targetLangs) {
         const targetLangData = await this.loadProjectLangData(project, targetLang);
 
         const addedKeys = _.difference(Object.keys(targetLangData), Object.keys(sourceLangData));
         const removedKeys = _.difference(Object.keys(targetLangData), Object.keys(sourceLangData));
+
+        console.log({ addedKeys, changedKeys, removedKeys });
 
         const keysToLocalize = [...addedKeys, ...changedKeys];
         const diffRecord = _.pick(sourceLangData, keysToLocalize);
@@ -70,23 +70,58 @@ export default class Localize extends Command {
 
         await this.saveProjectLangData(project, targetLang, newTargetLangData);
       }
+
+      await this.writeHashFile(project.name, sourceLangData);
     }
   }
 
-  private async loadProjectLangData(project: ConfigSchema['projects'][0], lang: string): Promise<Record<string, any>> {
-    const processor = Localize.langDataProcessorsMap.get(project.type);
-    if (!processor) { throw new Error('Unsupported project type ' + project.type);}
+  private async writeHashFile(projectName: string, sourceLangData: Record<string, string>) {
+    const projectHashfileNode: Record<string, string> = {};
+    for (const [key, value] of Object.entries(sourceLangData)) {
+      const valueHash = Crypto
+        .createHash('sha256')
+        .update(value)
+        .digest('hex');
 
-    const result = await processor.loadLangJson(project.dictionary, lang);
+        projectHashfileNode[key] = valueHash;
+    }
+    const replexicaHashfileContent = await fs.readFile('replexica-hash.yaml', 'utf-8')
+      .catch(() => '')
+      .then((content) => content.trim() || '');
+    const replexicaHashfile = YAML.parse(replexicaHashfileContent) || {} as Record<string, string>;
+    replexicaHashfile[projectName] = projectHashfileNode;
+
+    const newReplexicaHashfileContent = YAML.stringify(replexicaHashfile);
+    await fs.writeFile('replexica-hash.yaml', newReplexicaHashfileContent);
+  }
+
+  private async calculateChangedKeys(projectName: string, sourceLangData: Record<string, string>): Promise<string[]> {
+    const replexicaHashfileContent = await fs.readFile('replexica-hash.yaml', 'utf-8')
+      .catch(() => '')
+      .then((content) => content.trim() || '');
+    const replexicaHashfile = YAML.parse(replexicaHashfileContent) || {} as Record<string, string>;
+    const projectHashfileNode = replexicaHashfile[projectName] || {};
+
+    const result: string[] = [];
+    for (const [key, value] of Object.entries(sourceLangData)) {
+      const valueHash = Crypto
+        .createHash('sha256')
+        .update(value)
+        .digest('hex');
+
+      if (projectHashfileNode[key] !== valueHash) {
+        result.push(key);
+      }
+    }
 
     return result;
   }
 
-  private async loadPrevProjectLangData(project: ConfigSchema['projects'][0], lang: string): Promise<Record<string, any>> {
+  private async loadProjectLangData(project: ConfigSchema['projects'][0], lang: string): Promise<Record<string, string>> {
     const processor = Localize.langDataProcessorsMap.get(project.type);
     if (!processor) { throw new Error('Unsupported project type ' + project.type);}
 
-    const result = await processor.loadPrevLangJson(project.dictionary, lang);
+    const result = await processor.loadLangJson(project.dictionary, lang);
 
     return result;
   }
