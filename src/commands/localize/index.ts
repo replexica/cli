@@ -47,18 +47,20 @@ export default class Localize extends Command {
       const sourceLangData = await this.loadProjectLangData(project, config.sourceLang);
       const sourceLangDataPrev = await this.loadPrevProjectLangData(project, config.sourceLang);
 
-      const addedKeys = _.difference(Object.keys(sourceLangData), Object.keys(sourceLangDataPrev));
-      const removedKeys = _.difference(Object.keys(sourceLangDataPrev), Object.keys(sourceLangData));
       const changedKeys = _.difference(
         _.intersection(Object.keys(sourceLangData), Object.keys(sourceLangDataPrev)),
         Object.keys(_.pickBy(sourceLangData, (value, key) => sourceLangDataPrev[key] === value)),
       );
 
-      const keysToLocalize = [...addedKeys, ...changedKeys];
-      const diffRecord = _.pick(sourceLangData, keysToLocalize);
-
       for (const targetLang of config.targetLangs) {
         const targetLangData = await this.loadProjectLangData(project, targetLang);
+
+        const addedKeys = _.difference(Object.keys(targetLangData), Object.keys(sourceLangData));
+        const removedKeys = _.difference(Object.keys(targetLangData), Object.keys(sourceLangData));
+
+        const keysToLocalize = [...addedKeys, ...changedKeys];
+        const diffRecord = _.pick(sourceLangData, keysToLocalize);
+
         const targetLangDataUpdate = await this.translateRecord(project.name, targetLang, diffRecord);
 
         const newTargetLangData = _.chain(targetLangData)
@@ -81,7 +83,12 @@ export default class Localize extends Command {
   }
 
   private async loadPrevProjectLangData(project: ConfigSchema['projects'][0], lang: string): Promise<Record<string, any>> {
-    // TODO: implement
+    const processor = Localize.langDataProcessorsMap.get(project.type);
+    if (!processor) { throw new Error('Unsupported project type ' + project.type);}
+
+    const result = await processor.loadPrevLangJson(project.dictionary, lang);
+
+    return result;
   }
 
   private async saveProjectLangData(project: ConfigSchema['projects'][0], lang: string, data: Record<string, any>) {
