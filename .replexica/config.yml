@@ -1,0 +1,10 @@
+version: 1
+languages:
+  source: en
+  target:
+    - es
+    - fr
+projects:
+  - name: demo
+    type: json
+    dictionary: replexica-demo/[lang].json
