@@ -53,26 +53,30 @@ export default class Localize extends Command {
 
       for (const targetLang of config.targetLangs) {
         const targetLangData = await this.loadProjectLangData(project, targetLang);
+
         const removedKeys = _.difference(Object.keys(targetLangData), Object.keys(sourceLangData));
+        const missingKeys = _.difference(Object.keys(sourceLangData), Object.keys(targetLangData));
         
         const projectLogPrefix = `[${project.name}]`;
-        ux.info(`${projectLogPrefix} Changed: ${changedKeys.length}. Removed: ${removedKeys.length}.`);
+        ux.info(`${projectLogPrefix} Removed: ${removedKeys.length}. Changed: ${changedKeys.length}. Missing: ${missingKeys.length}.`);
+        
+        const keysToTranslate = [...changedKeys, ...missingKeys];
+
+        const translationLogPrefix = `${projectLogPrefix} (${config.sourceLang} -> ${targetLang})`;
+        ux.action.start(`${translationLogPrefix} Translating ${keysToTranslate.length} keys`, `initializing`);
 
         let langDataUpdate: Record<string, string> = {};
-        
-        const translationLogPrefix = `${projectLogPrefix} (${config.sourceLang} -> ${targetLang})`;
-        ux.action.start(`${translationLogPrefix} Translating ${changedKeys.length} keys`, `initializing`);
-        if (changedKeys.length) {
-          const changedKeysChunks = _.chunk(changedKeys, 100);
+        if (keysToTranslate.length) {
+          const keysToTranslateChunks = _.chunk(keysToTranslate, 100);
 
           let translatedKeysCount = 0;
-          for (const changedKeysChunk of changedKeysChunks) {
-            ux.action.start(`${translationLogPrefix} Translating keys`, `${translatedKeysCount}/${changedKeys.length}`);
-            const partialDiffRecord = _.pick(sourceLangData, changedKeysChunk);
+          for (const keysToTranslateChunk of keysToTranslateChunks) {
+            ux.action.start(`${translationLogPrefix} Translating keys`, `${translatedKeysCount}/${keysToTranslate.length}`);
+            const partialDiffRecord = _.pick(sourceLangData, keysToTranslateChunk);
             const partialLangDataUpdate = await this.translateRecord(targetLang, partialDiffRecord);
             langDataUpdate = _.merge(langDataUpdate, partialLangDataUpdate);
 
-            translatedKeysCount += changedKeysChunk.length;
+            translatedKeysCount += keysToTranslateChunk.length;
           }
 
           ux.action.stop(`Done`);
