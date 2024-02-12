@@ -59,16 +59,21 @@ export default class Localize extends Command {
         const keysToLocalize = [...addedKeys, ...changedKeys];
         const diffRecord = _.pick(sourceLangData, keysToLocalize);
         
-        ux.info(`[${project.name}] Added: ${addedKeys.length}, Changed: ${changedKeys}, Removed: ${removedKeys.length}`);
-        ux.info(`[${project.name}] Translating ${Object.keys(diffRecord).length} keys from ${config.sourceLang} to ${targetLang}...`);
-        const targetLangDataUpdate = await this.translateRecord(targetLang, diffRecord);
+        const logPrefix = `[${project.name}] [${config.sourceLang} => ${targetLang}]`
+        ux.info(`[${logPrefix}] Added: ${addedKeys.length}, Changed: ${changedKeys.length}, Removed: ${removedKeys.length}`);
+        if (keysToLocalize.length) {
+          ux.action.start(`[${logPrefix}] Translating ${keysToLocalize.length} keys`);
+          const targetLangDataUpdate = await this.translateRecord(targetLang, diffRecord);
+          const newTargetLangData = _.chain(targetLangData)
+            .merge(targetLangDataUpdate)
+            .omit(removedKeys)
+            .value();
 
-        const newTargetLangData = _.chain(targetLangData)
-          .merge(targetLangDataUpdate)
-          .omit(removedKeys)
-          .value();
-
-        await this.saveProjectLangData(project, targetLang, newTargetLangData);
+          await this.saveProjectLangData(project, targetLang, newTargetLangData);
+          ux.action.stop(`Done`);
+        } else {
+          ux.info(`[${logPrefix}] Skipped`)
+        }
       }
 
       await this.writeHashFile(project.name, sourceLangData);
