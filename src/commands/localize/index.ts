@@ -57,18 +57,15 @@ export default class Localize extends Command {
         const removedKeys = _.difference(Object.keys(targetLangData), Object.keys(sourceLangData));
 
         const diffRecord = _.pick(sourceLangData, changedKeys);
-
-        console.log({ sourceLangData, targetLangData, changedKeys, removedKeys, diffRecord });
         
         const logPrefix = `[${project.name}] [${config.sourceLang} => ${targetLang}]`
-        ux.info(`${logPrefix} Changed: ${changedKeys.length}, Removed: ${removedKeys.length}`);
         let targetLangDataUpdate: Record<string, string> = {};
+        ux.action.start(`${logPrefix} (Changed: ${changedKeys.length}, Removed: ${removedKeys.length}) Translating ${changedKeys.length} keys`);
         if (changedKeys.length) {
-          ux.action.start(`${logPrefix} Translating ${changedKeys.length} keys`);
           targetLangDataUpdate = await this.translateRecord(targetLang, diffRecord);
           ux.action.stop(`Done`);
         } else {
-          ux.info(`${logPrefix} Skipped`)
+          ux.action.stop(`Skipped`)
         }
 
         const newTargetLangData = _.chain(targetLangData)
