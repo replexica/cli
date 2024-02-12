@@ -3,8 +3,12 @@ import _ from "lodash";
 import { BaseLangDataProcessor, ILangDataProcessor, LangDataNode } from "./base";
 
 export class XcodeLangDataProcessor extends BaseLangDataProcessor implements ILangDataProcessor {
+  override async validatePath(path: string): Promise<void> {
+    if (!path.endsWith('.xcstrings')) { throw new Error('Xcode dictionary must have .xcstrings file extension'); }    
+  }
+
   async loadLangJson(filePath: string, lang: string): Promise<Record<string, string>> {
-    if (!filePath.endsWith('.xcstrings')) { throw new Error('Xcode dictionary must have .xcstrings file extension'); }
+    await this.validatePath(filePath);
 
     const fileExists = fs.stat(filePath).then(() => true).catch(() => false);
     if (!fileExists) {
@@ -18,7 +22,7 @@ export class XcodeLangDataProcessor extends BaseLangDataProcessor implements ILa
   }
 
   async saveLangJson(filePath: string, lang: string, langData: LangDataNode): Promise<void> {
-    if (!filePath.endsWith('.xcstrings')) { throw new Error('Xcode dictionary must have .xcstrings file extension'); }
+    await this.validatePath(filePath);
 
     const fileExists = await fs.stat(filePath).then(() => true).catch(() => false);
     if (!fileExists) { throw new Error('Xcode translation was not found.'); }
