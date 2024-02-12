@@ -7,6 +7,12 @@ languages:
     - fr
 
 projects:
-  - name: demo
+  - name: demo-json
     type: json
-    dictionary: demo/[lang].json
+    dictionary: demo/json/[lang].json
+  - name: demo-xcode
+    type: xcode
+    dictionary: demo/xcode/Localizable.xcstrings
+  - name: demo-yaml
+    type: yaml
+    dictionary: demo/yaml/[lang].yml
