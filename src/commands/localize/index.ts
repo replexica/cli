@@ -54,27 +54,29 @@ export default class Localize extends Command {
       for (const targetLang of config.targetLangs) {
         const targetLangData = await this.loadProjectLangData(project, targetLang);
 
-        const addedKeys = _.difference(Object.keys(targetLangData), Object.keys(sourceLangData));
         const removedKeys = _.difference(Object.keys(targetLangData), Object.keys(sourceLangData));
 
-        const keysToLocalize = [...addedKeys, ...changedKeys];
-        const diffRecord = _.pick(sourceLangData, keysToLocalize);
+        const diffRecord = _.pick(sourceLangData, changedKeys);
+
+        console.log({ sourceLangData, targetLangData, changedKeys, removedKeys, diffRecord });
         
         const logPrefix = `[${project.name}] [${config.sourceLang} => ${targetLang}]`
-        ux.info(`[${logPrefix}] Added: ${addedKeys.length}, Changed: ${changedKeys.length}, Removed: ${removedKeys.length}`);
-        if (keysToLocalize.length) {
-          ux.action.start(`[${logPrefix}] Translating ${keysToLocalize.length} keys`);
-          const targetLangDataUpdate = await this.translateRecord(targetLang, diffRecord);
-          const newTargetLangData = _.chain(targetLangData)
-            .merge(targetLangDataUpdate)
-            .omit(removedKeys)
-            .value();
-
-          await this.saveProjectLangData(project, targetLang, newTargetLangData);
+        ux.info(`${logPrefix} Changed: ${changedKeys.length}, Removed: ${removedKeys.length}`);
+        let targetLangDataUpdate: Record<string, string> = {};
+        if (changedKeys.length) {
+          ux.action.start(`${logPrefix} Translating ${changedKeys.length} keys`);
+          targetLangDataUpdate = await this.translateRecord(targetLang, diffRecord);
           ux.action.stop(`Done`);
         } else {
-          ux.info(`[${logPrefix}] Skipped`)
+          ux.info(`${logPrefix} Skipped`)
         }
+
+        const newTargetLangData = _.chain(targetLangData)
+          .merge(targetLangDataUpdate)
+          .omit(removedKeys)
+          .value();
+
+        await this.saveProjectLangData(project, targetLang, newTargetLangData);
       }
 
       await this.writeHashFile(project.name, sourceLangData);
