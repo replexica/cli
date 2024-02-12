@@ -60,7 +60,7 @@ export default class Localize extends Command {
         const projectLogPrefix = `[${project.name}]`;
         ux.info(`${projectLogPrefix} Removed: ${removedKeys.length}. Changed: ${changedKeys.length}. Missing: ${missingKeys.length}.`);
         
-        const keysToTranslate = [...changedKeys, ...missingKeys];
+        const keysToTranslate = _.uniq([...changedKeys, ...missingKeys]);
 
         const translationLogPrefix = `${projectLogPrefix} (${config.sourceLang} -> ${targetLang})`;
         ux.action.start(`${translationLogPrefix} Translating ${keysToTranslate.length} keys`, `initializing`);
