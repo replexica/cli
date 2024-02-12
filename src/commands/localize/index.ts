@@ -55,18 +55,19 @@ export default class Localize extends Command {
         const targetLangData = await this.loadProjectLangData(project, targetLang);
         const removedKeys = _.difference(Object.keys(targetLangData), Object.keys(sourceLangData));
         
-        const logPrefix = `[${project.name}] (${config.sourceLang} => ${targetLang})`;
-        ux.info(`${logPrefix} Changed: ${changedKeys.length}. Removed: ${removedKeys.length}.`);
+        const projectLogPrefix = `[${project.name}]`;
+        ux.info(`${projectLogPrefix} Changed: ${changedKeys.length}. Removed: ${removedKeys.length}.`);
 
         let langDataUpdate: Record<string, string> = {};
         
-        ux.action.start(`${logPrefix} Translating ${changedKeys.length} keys`, `initializing`);
+        const translationLogPrefix = `${projectLogPrefix} (${config.sourceLang} -> ${targetLang})`;
+        ux.action.start(`${translationLogPrefix} Translating ${changedKeys.length} keys`, `initializing`);
         if (changedKeys.length) {
           const changedKeysChunks = _.chunk(changedKeys, 100);
 
           let translatedKeysCount = 0;
           for (const changedKeysChunk of changedKeysChunks) {
-            ux.action.start(`${logPrefix} Translating keys`, `${translatedKeysCount}/${changedKeys.length}`);
+            ux.action.start(`${translationLogPrefix} Translating keys`, `${translatedKeysCount}/${changedKeys.length}`);
             const partialDiffRecord = _.pick(sourceLangData, changedKeysChunk);
             const partialLangDataUpdate = await this.translateRecord(targetLang, partialDiffRecord);
             langDataUpdate = _.merge(langDataUpdate, partialLangDataUpdate);
