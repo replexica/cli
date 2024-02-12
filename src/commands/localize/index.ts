@@ -49,28 +49,38 @@ export default class Localize extends Command {
     const config = await this.extractConfig();
     for (const project of config.projects) {
       const sourceLangData = await this.loadProjectLangData(project, config.sourceLang);
-
       const changedKeys = await this.calculateChangedKeys(project.name, sourceLangData);
 
       for (const targetLang of config.targetLangs) {
         const targetLangData = await this.loadProjectLangData(project, targetLang);
-
         const removedKeys = _.difference(Object.keys(targetLangData), Object.keys(sourceLangData));
-
-        const diffRecord = _.pick(sourceLangData, changedKeys);
         
-        const logPrefix = `[${project.name}] [${config.sourceLang} => ${targetLang}]`
-        let targetLangDataUpdate: Record<string, string> = {};
-        ux.action.start(`${logPrefix} (Changed: ${changedKeys.length}, Removed: ${removedKeys.length}) Translating ${changedKeys.length} keys`);
+        const logPrefix = `[${project.name}] (${config.sourceLang} => ${targetLang})`;
+        ux.info(`${logPrefix} Changed: ${changedKeys.length}. Removed: ${removedKeys.length}.`);
+
+        let langDataUpdate: Record<string, string> = {};
+        
+        ux.action.start(`${logPrefix} Translating ${changedKeys.length} keys`, `initializing`);
         if (changedKeys.length) {
-          targetLangDataUpdate = await this.translateRecord(targetLang, diffRecord);
+          const changedKeysChunks = _.chunk(changedKeys, 100);
+
+          let translatedKeysCount = 0;
+          for (const changedKeysChunk of changedKeysChunks) {
+            ux.action.start(`${logPrefix} Translating keys`, `${translatedKeysCount}/${changedKeys.length}`);
+            const partialDiffRecord = _.pick(sourceLangData, changedKeysChunk);
+            const partialLangDataUpdate = await this.translateRecord(targetLang, partialDiffRecord);
+            langDataUpdate = _.merge(langDataUpdate, partialLangDataUpdate);
+
+            translatedKeysCount += changedKeysChunk.length;
+          }
+
           ux.action.stop(`Done`);
         } else {
-          ux.action.stop(`Skipped`)
+          ux.action.stop(`Skipped`);
         }
 
         const newTargetLangData = _.chain(targetLangData)
-          .merge(targetLangDataUpdate)
+          .merge(langDataUpdate)
           .omit(removedKeys)
           .value();
 
