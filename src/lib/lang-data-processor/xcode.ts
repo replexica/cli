@@ -21,7 +21,7 @@ export class XcodeLangDataProcessor extends BaseLangDataProcessor implements ILa
     }
   }
 
-  async saveLangJson(filePath: string, lang: string, langData: LangDataNode): Promise<void> {
+  async saveLangJson(filePath: string, lang: string, record: Record<string, string>): Promise<void> {
     await this.validatePath(filePath);
 
     const fileExists = await fs.stat(filePath).then(() => true).catch(() => false);
@@ -30,6 +30,7 @@ export class XcodeLangDataProcessor extends BaseLangDataProcessor implements ILa
     const fileContent = await fs.readFile(filePath, 'utf8');
     const parsed = JSON.parse(fileContent);
 
+    const langData = await this.unflatten(record);
     const langDataToMerge = await this.serializeLangDataPartial(langData, lang);
 
     const result = _.mergeWith(parsed, langDataToMerge, (objValue, srcValue) => {
