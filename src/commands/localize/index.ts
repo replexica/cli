@@ -7,7 +7,7 @@ import _ from 'lodash';
 import { getReplexicaClient } from '../../engine/client';
 import dotenv from 'dotenv';
 import { createId } from '@paralleldrive/cuid2';
-import { ILangDataProcessor, JsonLangDataProcessor, LangDataType, XcodeLangDataProcessor, YamlLangDataProcessor } from '../../lib/lang-data-processor';
+import { ILangDataProcessor, JsonLangDataProcessor, LangDataType, MarkdownLangDataProcessor, XcodeLangDataProcessor, YamlLangDataProcessor } from '../../lib/lang-data-processor';
 import YAML from 'yaml';
 import Crypto from 'crypto';
 
@@ -40,6 +40,7 @@ export default class Localize extends Command {
   }
 
   static langDataProcessorsMap = new Map<LangDataType, ILangDataProcessor>()
+    .set('markdown', new MarkdownLangDataProcessor())
     .set('json', new JsonLangDataProcessor())
     .set('yaml', new YamlLangDataProcessor())
     .set('xcode', new XcodeLangDataProcessor());

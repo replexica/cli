@@ -1,11 +1,11 @@
 import fs from 'fs/promises';
 import path from "path";
-import { BaseLangDataProcessor, ILangDataProcessor, LangDataNode } from "./base";
+import { BaseLangDataProcessor, ILangDataProcessor } from "./base";
 
-export class JsonLangDataProcessor extends BaseLangDataProcessor implements ILangDataProcessor {
+export class MarkdownLangDataProcessor extends BaseLangDataProcessor implements ILangDataProcessor {
   override async validatePath(filePathPattern: string): Promise<void> {
     if (!filePathPattern.includes('[lang]')) { throw new Error('The file path must include the [lang] placeholder'); }
-    if (!filePathPattern.endsWith('.json')) { throw new Error('Json dictionary must have .json file extension'); }    
+    if (!['.md', '.mdx'].some((ext) => filePathPattern.endsWith(ext))) { throw new Error('Markdown dictionary must have .md or .mdx file extension'); }
   }
 
   async loadLangJson(filePathPattern: string, lang: string): Promise<Record<string, string>> {
@@ -17,8 +17,7 @@ export class JsonLangDataProcessor extends BaseLangDataProcessor implements ILan
       return {};
     } else {
       const fileContent = await fs.readFile(filePath, 'utf8');
-      const langData = JSON.parse(fileContent) as LangDataNode;
-      const result = await this.flatten(langData);
+      const result = { '': fileContent };
       return result;
     }
   }
@@ -26,10 +25,8 @@ export class JsonLangDataProcessor extends BaseLangDataProcessor implements ILan
   async saveLangJson(filePathPattern: string, lang: string, record: Record<string, string>): Promise<void> {
     await this.validatePath(filePathPattern);
 
-    const langData = await this.unflatten(record);
-
     const filePath = filePathPattern.replace('[lang]', lang);
-    const fileContent = JSON.stringify(langData, null, 2);
+    const fileContent = record[''];
     // Create all directories in the path if they don't exist
     const dirPath = path.dirname(filePath);
     await fs.mkdir(dirPath, { recursive: true });

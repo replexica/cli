@@ -16,3 +16,6 @@ projects:
   - name: demo-yaml
     type: yaml
     dictionary: demo/yaml/[lang].yml
+  - name: demo-markdown
+    type: markdown
+    dictionary: demo/markdown/[lang].md
