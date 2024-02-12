@@ -56,12 +56,12 @@ export default class Localize extends Command {
         const addedKeys = _.difference(Object.keys(targetLangData), Object.keys(sourceLangData));
         const removedKeys = _.difference(Object.keys(targetLangData), Object.keys(sourceLangData));
 
-        console.log({ addedKeys, changedKeys, removedKeys });
-
         const keysToLocalize = [...addedKeys, ...changedKeys];
         const diffRecord = _.pick(sourceLangData, keysToLocalize);
-
-        const targetLangDataUpdate = await this.translateRecord(project.name, targetLang, diffRecord);
+        
+        ux.info(`[${project.name}] Added: ${addedKeys.length}, Changed: ${changedKeys}, Removed: ${removedKeys.length}`);
+        ux.info(`[${project.name}] Translating ${Object.keys(diffRecord).length} keys from ${config.sourceLang} to ${targetLang}...`);
+        const targetLangDataUpdate = await this.translateRecord(targetLang, diffRecord);
 
         const newTargetLangData = _.chain(targetLangData)
           .merge(targetLangDataUpdate)
@@ -175,10 +175,8 @@ export default class Localize extends Command {
     };
   }
 
-  private async translateRecord(projectName: string, targetLang: string, data: Record<string, any>): Promise<Record<string, string>> {
+  private async translateRecord(targetLang: string, data: Record<string, any>): Promise<Record<string, string>> {
     const config = await this.extractConfig();
-
-    ux.info(`[${projectName}] ${Object.keys(data).length} keys from ${config.sourceLang} to ${targetLang}...`);
     if (Object.keys(data).length === 0) { return {}; }
 
     const replexica = getReplexicaClient();
