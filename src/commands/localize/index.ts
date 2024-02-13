@@ -13,6 +13,8 @@ import Crypto from 'crypto';
 
 dotenv.config();
 
+const TRANSLATIONS_PER_BATCH = 25;
+
 export default class Localize extends Command {
   static args = {
     root: Args.string({
@@ -67,7 +69,7 @@ export default class Localize extends Command {
 
         let langDataUpdate: Record<string, string> = {};
         if (keysToTranslate.length) {
-          const keysToTranslateChunks = _.chunk(keysToTranslate, 100);
+          const keysToTranslateChunks = _.chunk(keysToTranslate, TRANSLATIONS_PER_BATCH);
 
           let translatedKeysCount = 0;
           for (const keysToTranslateChunk of keysToTranslateChunks) {
