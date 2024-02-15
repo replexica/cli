@@ -14,13 +14,13 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "¡Hola mundo!!"
+            "value": "¡Hola mundo!"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bonjour le monde!!"
+            "value": "Bonjour le monde !!"
           }
         }
       }
@@ -70,7 +70,7 @@
               "zero": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "No hay elementos"
+                  "value": "No hay artículos"
                 }
               }
             }
@@ -94,7 +94,7 @@
               "zero": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "Aucun élément"
+                  "value": "Aucun article"
                 }
               }
             }
