@@ -44,7 +44,7 @@ Convierte todos los caracteres de la cadena dada a minúsculas.
 
 Convierte todos los caracteres de la cadena dada a mayúsculas.
 
-## Contribuciones
+## Contribuir
 
 Se aceptan solicitudes de extracción. Para cambios importantes, por favor abre un problema primero para discutir lo que te gustaría cambiar.
 

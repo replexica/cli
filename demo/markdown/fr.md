@@ -2,7 +2,7 @@
 
 ## Description
 
-`stringyfy` est une bibliothèque npm simple offrant une série de fonctions utilitaires pour manipuler et transformer des chaînes de caractères en JavaScript. Elle est légère, facile à utiliser et ne dépend d'aucune autre bibliothèque.
+`stringyfy` est une bibliothèque npm simple offrant un ensemble de fonctions utilitaires pour manipuler et transformer des chaînes de caractères en JavaScript. Elle est légère, facile à utiliser et ne dépend d'aucune autre bibliothèque.
 
 ## Installation
 
@@ -46,7 +46,7 @@ Convertit tous les caractères de la chaîne donnée en majuscules.
 
 ## Contribution
 
-Les pull requests sont les bienvenues. Pour les changements importants, veuillez d'abord ouvrir un problème pour discuter de ce que vous souhaitez modifier.
+Les pull requests sont les bienvenues. Pour les changements majeurs, veuillez ouvrir un problème d'abord pour discuter de ce que vous souhaitez modifier.
 
 ## Licence
 
