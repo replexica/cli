@@ -10,6 +10,7 @@ import { createId } from '@paralleldrive/cuid2';
 import { ILangDataProcessor, JsonLangDataProcessor, LangDataType, MarkdownLangDataProcessor, XcodeLangDataProcessor, YamlLangDataProcessor } from '../../lib/lang-data-processor';
 import YAML from 'yaml';
 import Crypto from 'crypto';
+import { YamlRorLangDataProcessor } from '../../lib/lang-data-processor/yaml-ror';
 
 dotenv.config();
 
@@ -45,6 +46,7 @@ export default class Localize extends Command {
     .set('markdown', new MarkdownLangDataProcessor())
     .set('json', new JsonLangDataProcessor())
     .set('yaml', new YamlLangDataProcessor())
+    .set('yaml-ror', new YamlRorLangDataProcessor())
     .set('xcode', new XcodeLangDataProcessor());
 
   async run(): Promise<void> {

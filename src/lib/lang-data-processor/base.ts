@@ -1,4 +1,4 @@
-export type LangDataType = 'json' | 'xcode' | 'yaml' | 'markdown';
+export type LangDataType = 'json' | 'xcode' | 'yaml' | 'yaml-ror' | 'markdown';
 
 export type LangDataNode = {
   [key: string]: string | LangDataNode;
@@ -12,9 +12,14 @@ export interface ILangDataProcessor {
 export abstract class BaseLangDataProcessor {
   protected abstract validatePath(path: string, lang: string): Promise<void | never>;
 
-  protected async flatten(langData: LangDataNode): Promise<Record<string, string>> {
+  protected async preflatten(langData: LangDataNode, lang: string): Promise<LangDataNode> {
+    return langData;
+  }
+
+  protected async flatten(langData: LangDataNode, lang: string): Promise<Record<string, string>> {
     const flat = await import('flat');
-    const result = flat.flatten<LangDataNode, Record<string, string>>(langData, {
+    const preparedLangData = await this.preflatten(langData, lang);
+    const result = flat.flatten<LangDataNode, Record<string, string>>(preparedLangData, {
       delimiter: '/',
       transformKey: (key) => encodeURIComponent(key),
     });
@@ -22,12 +27,17 @@ export abstract class BaseLangDataProcessor {
     return result;
   }
 
-  protected async unflatten(record: Record<string, string>): Promise<LangDataNode> {
+  protected async postunflatten(record: LangDataNode, lang: string): Promise<LangDataNode> {
+    return record;
+  }
+
+  protected async unflatten(record: Record<string, string>, lang: string): Promise<LangDataNode> {
     const flat = await import('flat');
-    const result = flat.unflatten<Record<string, string>, LangDataNode>(record, {
+    const rawResult = flat.unflatten<Record<string, string>, LangDataNode>(record, {
       delimiter: '/',
       transformKey: (key) => decodeURIComponent(key),
     });
+    const result = await this.postunflatten(rawResult, lang);
 
     return result;
   }

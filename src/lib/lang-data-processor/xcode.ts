@@ -16,7 +16,7 @@ export class XcodeLangDataProcessor extends BaseLangDataProcessor implements ILa
     } else {
       const fileContent = await fs.readFile(filePath, 'utf8');
       const langData = await this.parseLangData(fileContent, lang);
-      const result = await this.flatten(langData);
+      const result = await this.flatten(langData, lang);
       return result;
     }
   }
@@ -30,7 +30,7 @@ export class XcodeLangDataProcessor extends BaseLangDataProcessor implements ILa
     const fileContent = await fs.readFile(filePath, 'utf8');
     const parsed = JSON.parse(fileContent);
 
-    const langData = await this.unflatten(record);
+    const langData = await this.unflatten(record, lang);
     const langDataToMerge = await this.serializeLangDataPartial(langData, lang);
 
     const result = _.mergeWith(parsed, langDataToMerge, (objValue, srcValue) => {

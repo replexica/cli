@@ -19,15 +19,15 @@ export class YamlLangDataProcessor extends BaseLangDataProcessor implements ILan
     } else {
       const fileContent = await fs.readFile(filePath, 'utf8');
       const langData = YAML.parse(fileContent) as LangDataNode;
-      const result = await this.flatten(langData);
+      const result = await this.flatten(langData, lang);
       return result;
     }
   }
 
-  async saveLangJson(filePathPattern: string, lang: string, record: Record<string, string>): Promise<void> {
+  async saveLangJson(filePathPattern: string, lang: string, record: Record<string, any>): Promise<void> {
     await this.validatePath(filePathPattern);
 
-    const langData = await this.unflatten(record);
+    const langData = await this.unflatten(record, lang);
 
     const filePath = filePathPattern.replace('[lang]', lang);
     const fileContent = YAML.stringify(langData);
