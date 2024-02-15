@@ -1,4 +1,4 @@
-export type LangDataType = 'json' | 'xcode' | 'yaml' | 'yaml-ror' | 'markdown';
+export type LangDataType = 'json' | 'xcode' | 'yaml' | 'yaml-root-key' | 'markdown';
 
 export type LangDataNode = {
   [key: string]: string | LangDataNode;

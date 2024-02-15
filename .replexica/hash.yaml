@@ -14,6 +14,6 @@ demo-yaml:
   home/description%2Fdev: 305ea3018a50aff752a42cb3d6646ef8117773c77d38d3123e1224abb2258d7f
 demo-markdown:
   "": 0465e5fdcfe136b556b153e17d8cd67bd84a489371c03744508523fa5848b424
-demo-yaml-ror:
+demo-yaml-root-key:
   home/title%2Fmain: 0112d07d03ae9f53f38d27c89f04dc0516a9fa5857e4ef7abc02e498255ab773
   home/description%2Fdev: 305ea3018a50aff752a42cb3d6646ef8117773c77d38d3123e1224abb2258d7f

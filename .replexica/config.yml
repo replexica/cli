@@ -16,9 +16,9 @@ projects:
   - name: demo-yaml
     type: yaml
     dictionary: demo/yaml/[lang].yml
-  - name: demo-yaml-ror
-    type: yaml-ror
-    dictionary: demo/yaml-ror/[lang].yml
+  - name: demo-yaml-root-key
+    type: yaml-root-key
+    dictionary: demo/yaml-root-key/[lang].yml
   - name: demo-markdown
     type: markdown
     dictionary: demo/markdown/[lang].md

@@ -46,7 +46,7 @@ export default class Localize extends Command {
     .set('markdown', new MarkdownLangDataProcessor())
     .set('json', new JsonLangDataProcessor())
     .set('yaml', new YamlLangDataProcessor())
-    .set('yaml-ror', new YamlRorLangDataProcessor())
+    .set('yaml-root-key', new YamlRorLangDataProcessor())
     .set('xcode', new XcodeLangDataProcessor());
 
   async run(): Promise<void> {

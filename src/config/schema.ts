@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 const supportedLanguages = z.enum(['en', 'es', 'ca', 'fr', 'it', 'de', 'ja', 'ko', 'zh-CN', 'ru']);
 
-const supportedProjectTypes = z.enum(['json', 'xcode', 'yaml', 'yaml-ror', 'markdown']);
+const supportedProjectTypes = z.enum(['json', 'xcode', 'yaml', 'yaml-root-key', 'markdown']);
 
 const languageSchema = z.object({
   source: supportedLanguages,
