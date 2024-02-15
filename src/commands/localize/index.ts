@@ -55,6 +55,11 @@ export default class Localize extends Command {
       const sourceLangData = await this.loadProjectLangData(project, config.sourceLang);
       const changedKeys = await this.calculateChangedKeys(project.name, sourceLangData);
 
+      // Write hash file at the beginning of the process
+      // So that if it fails in the middle, we won't have
+      // to re-translate everything from scratch again
+      await this.writeHashFile(project.name, sourceLangData);
+
       for (const targetLang of config.targetLangs) {
         const targetLangData = await this.loadProjectLangData(project, targetLang);
 
@@ -95,8 +100,6 @@ export default class Localize extends Command {
 
         await this.saveProjectLangData(project, targetLang, newTargetLangData);
       }
-
-      await this.writeHashFile(project.name, sourceLangData);
     }
   }
 
